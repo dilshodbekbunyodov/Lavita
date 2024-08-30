@@ -1,0 +1,168 @@
+<template>
+  <div class="mt-6 flex-1 flex flex-col">
+<!--    <pre>{{proInvoices}}</pre>-->
+    <div class="flex-1 flex flex-col">
+      <div class="overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+          <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+            <table class="min-w-full divide-y divide-gray-300">
+              <thead class="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  class="py-3.5 pl-4 pr-3 text-left font-medium uppercase text-sm text-gray-400 sm:pl-6"
+                >
+                  №
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left font-medium uppercase text-sm text-gray-400"
+                >
+                  склад
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left font-medium uppercase text-sm text-gray-400"
+                >
+                  Общая суммА
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left font-medium uppercase text-sm text-gray-400"
+                >
+                  ответственный / дата
+                </th>
+                <th
+                  scope="col"
+                  class="px-3 py-3.5 text-left font-medium uppercase text-sm text-gray-400"
+                >
+                  СТАТУС
+                </th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                  <span class="sr-only"> </span>
+                </th>
+              </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+              <tr
+                v-for="(invoice, index) in proInvoices"
+                :key="index"
+                @click="toRoute({ name: 'showproinvoice', params: { id: invoice.id } })"
+                class="hover:cursor-pointer"
+              >
+                <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-6">
+                  <div class="flex justify-start items-center flex-grow gap-3">
+                    <div class="flex flex-col justify-start items-start flex-grow relative">
+                      <p
+                        class="self-stretch flex-grow-0 flex-shrink-0 w-[177.5px] text-sm font-medium text-left text-gray-900"
+                      >
+                        {{ invoice.id }}
+<!--                        {{ invoice.warehouse_receiver_id }}-->
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{ invoice.warehouse_receiver_address }}
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  {{invoice.price.toLocaleString()}} сум
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  <div class="font-medium text-black">
+                    {{ invoice.employee?.lastname }}
+                    {{ invoice.employee?.username }}
+                  </div>
+                  <div class="text-gray-400">
+                    {{ convertDate(invoice.updatedAt, 'full') }}
+                  </div>
+                </td>
+                <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+                  <span
+                    :class="`px-2.5 py-0.5 rounded-[10px] text-xs font-medium text-center ${statusClass(invoice.status)}`"
+                  >
+                    {{ statusTitle(invoice.status) }}
+                  </span>
+                </td>
+                <td class="relative whitespace-nowrap py-4 pl-3 text-right text-sm font-medium">
+                  <div href="#" class="text-indigo-600 hover:text-indigo-900">
+                    <ChevronRightIcon class="size-6 text-gray-400" />
+                  </div>
+                </td>
+              </tr>
+
+              <tr v-if="proInvoices && proInvoices.length === 0">
+                <td colspan="6" class="text-center p-3">
+                  <span class="text-sm">Нет данных</span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+<script setup lang="ts">
+import { ChevronRightIcon } from '@heroicons/vue/24/solid'
+import { storeToRefs } from 'pinia'
+import { onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { proInvoiceStore } from '@/stores/invoice/proInvoice'
+import { convertDate } from '@/helpers/func'
+
+const store = proInvoiceStore()
+const { proInvoices, proInvoicesPaginate } = storeToRefs(store)
+import { type toRouteType } from '@/types/api'
+
+const emit = defineEmits(['refresh'])
+
+const route = useRoute()
+const router = useRouter()
+
+const proinvoiceStatus = [
+  {
+    title: 'Опубликовано',
+    value: 'published',
+    class: 'bg-green-100 text-green-800'
+  },
+  {
+    title: 'Черновик',
+    value: 'draft',
+    class: 'bg-gray-100 text-gray-800'
+  },
+  {
+    title: 'Отменён',
+    value: 'canceled',
+    class: 'bg-red-100 text-red-800'
+  }
+]
+const invoice = ref({ status: '' })
+
+const toRoute = (obj: toRouteType) => {
+  router.push(obj)
+}
+
+
+const statusClass = (e: any) => {
+  const defaultStatus = e
+  const statusObj = proinvoiceStatus.find(item => item.value === (invoice.value.status || defaultStatus))
+  return statusObj ? statusObj.class : ''
+}
+
+const statusTitle = (e: any) => {
+  const defaultStatus = e
+  const statusObj = proinvoiceStatus.find(item => item.value === (invoice.value.status || defaultStatus))
+  return statusObj ? statusObj.title : ''
+}
+
+watch(() => route.query, () => {
+  emit('refresh')
+})
+
+onMounted(() => {
+  emit('refresh')
+})
+</script>
+
